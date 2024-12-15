@@ -112,8 +112,6 @@ e = 1.0e-3
 # Define frequencies
 # frequencies = np.linspace(0.1, 8000, 100)
 
-frequencies = 1500
-
 # L_values = np.linspace(5e-3, 20e-3, 5)  # Vary L between 5mm and 20mm
 # compute_impedance_varying_param(frequencies, L_values, d, sigma, p_bar, e)
 
