@@ -8,9 +8,9 @@ mu = 1.81e-5  # Dynamic viscosity Pa.s
 nu = mu / rho0  # Kinematic viscosity m2/s
 
 # Plate's dimensions
-sigma = 0.0139  # Porosity
-e = 1.02e-3  # Thickness in meters (converted from mm)
-d = 0.68e-3  # Diameter in meters (converted from mm)
+sigma = 0.015  # Porosity
+e = 1.0e-3  # Thickness in meters (converted from mm)
+d = 0.5e-3  # Diameter in meters (converted from mm)
 
 # Cavity
 L = 0.04  # Cavity length in meters
@@ -77,11 +77,11 @@ axs[1].grid(True)
 
 # Plot cavity impedance
 plt.figure(figsize=(10, 6))
-plt.plot(k * L, chi_cavity, color='blue', label='Cavity impedance')
-plt.plot(k * L, chi_tot + chi_cavity, color='red', label='Cavity and plate impedance')
-plt.xlabel('kL')
-plt.xlim([0, 3.1])
-plt.ylabel('Acoustic Reactance (χ)')
+plt.plot(frequencies, chi_cavity, color='blue', label='Cavity impedance')
+plt.plot(frequencies, chi_tot + chi_cavity, color='red', label='Cavity and plate impedance')
+plt.xlabel('Frequency (Hz)')
+# plt.xlim([0, 3.1])
+plt.ylabel('Coefficient B')
 plt.ylim([-20, 50])
 plt.legend()
 plt.grid(True)

@@ -5,13 +5,13 @@ from scipy.optimize import fsolve
 
 """ Constants """
 
-# Air's constants
+# %% Air's constants
 c0 = 343  # Speed of sound in air (m/s)
-rho0 = 1.21  # Air density (kg/m^3)
+rho0 = 1.21  # Air density (kg/m^3) 
 mu = 1.81 * 10**-5  # Dynamic viscosity Pa.s
 nu = mu / rho0  # Kinematic viscosity m2/s
 
-# Plate's dimensions
+# %% Plate's dimensions
 sigma = 0.0139  # Porosity
 e = 1.02e-3  # Thickness in meters (converted from mm)
 d = 0.68e-3  # Diameter in meters (converted from mm)
@@ -89,11 +89,11 @@ for p_bar in p_bar_values:
 # Plot the nonlinear resistance for different pressure amplitudes
 plt.figure(figsize=(10, 6))
 for p_bar, r_values in r_nonlinear.items():
-    plt.plot(frequencies, r_values, label=f"$|\\bar{{p}}| = {p_bar}$ Pa")
+    plt.plot(frequencies, r_values, label=f"p = {p_bar} Pa")
 
 plt.xlabel("Frequency (Hz)")
 plt.ylabel("Nonlinear Resistance $r$ (Pa·s/m)")
-plt.title("Nonlinear Resistance vs Frequency for Different $|\\bar{p}|$")
+# plt.title("Nonlinear Resistance vs Frequency for Different p")
 plt.legend()
 plt.grid(True)
 plt.show()
