@@ -8,33 +8,34 @@ mu = 1.81e-5  # Dynamic viscosity Pa.s
 nu = mu / rho0  # Kinematic viscosity m2/s
 
 # Plate's dimensions
-sigma = 0.0139  # Porosity
-e = 1.02e-3  # Thickness in meters (converted from mm)
-d = 0.68e-3  # Diameter in meters (converted from mm)
+sigma = 0.05  # Porosity
+e = 1.0e-3  # Thickness in meters
+d = 1.0e-3  # Diameter in meters
 
 # Cavity
-L = 0.04  # Cavity length in meters
+L = 0.08  # Cavity length in meters
 
 # Frequency range
 frequencies = np.linspace(0.1, 5000, 100)
 
 def Initiate_wave(frequencies):
-    """Initiates wave properties: omega and k."""
+    """
+    Initiates wave properties: omega and k.
+    """
     omega = 2 * np.pi * frequencies  # Angular frequency
     k = omega / c0  # Wave number
     return omega, k
 
 def compute_impedance_plate(omega, k):
-    
     """
     Computes the acoustic resistance and reactance for the plate.
     """
-    # Acoustic resistance (r)
+    # Acoustic resistance
     r_visc = np.sqrt(8 * nu * omega) / (c0 * sigma) * (1 + e / d)
     r_rad = 1 / (8 * sigma) * (k * d)**2
     r_tot = r_visc + r_rad
 
-    # Acoustic reactance (χ)
+    # Acoustic reactance
     chi_mass = omega / (sigma * c0) * (e + (8 * d) / (3 * np.pi) * (1 - 0.7 * np.sqrt(sigma)))
     chi_visc = omega / (sigma * c0) * (np.sqrt(8 * nu / omega) * (1 + e / d))
     chi_tot = chi_mass + chi_visc
@@ -77,27 +78,31 @@ axs[1].grid(True)
 
 # Plot cavity impedance
 plt.figure(figsize=(10, 6))
-plt.plot(k * L, chi_cavity, color='blue', label='Cavity impedance')
-plt.plot(k * L, chi_tot + chi_cavity, color='red', label='Cavity and plate impedance')
-plt.xlabel('kL')
-plt.xlim([0, 3.1])
-plt.ylabel('Acoustic Reactance (χ)')
+plt.plot(frequencies, chi_cavity, color='blue', label='Cavity impedance')
+plt.plot(frequencies, chi_tot + chi_cavity, color='red', label='Cavity and plate impedance')
+plt.xlabel('Frequency (Hz)')
+# plt.xlim([0, 3.1])
+plt.ylabel('Coefficient B')
 plt.ylim([-20, 50])
 plt.legend()
 plt.grid(True)
 
 # Non-linear contribution (Resistance)
 def compute_resistance_guess_formule():
-    """Returns the resistance from the guess formula."""
+    """
+    Returns the resistance from the guess formula.
+    """
     B = (1 - sigma**2) / (sigma * c0)
     return B
 
 def compute_resistance_Melling_formule(C):
-    """Returns the resistance using Melling's formula."""
+    """
+    Returns the resistance using Melling's formula.
+    """
     B = 4 / (3 * np.pi) * (1 - sigma**2) / (sigma * c0 * C**2)
     return B
 
-v0 = np.linspace(0, 2, 100)  # Acoustic velocity (m/s)
+v0 = np.linspace(0, 5, 100)  # Acoustic velocity (m/s)
 C_D = 0.7
 
 plt.figure(figsize=(10, 6))
@@ -107,5 +112,4 @@ plt.xlabel('Acoustic velocity (m/s)')
 plt.ylabel('Acoustic resistance')
 plt.legend()
 plt.grid(True)
-
 plt.show()
