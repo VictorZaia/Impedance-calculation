@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
+import matplotlib.cm as cm
 
 # %%
 """Constants """
@@ -10,7 +11,6 @@ c0 = 343  # Speed of sound in air (m/s)
 rho0 = 1.21  # Air density (kg/m^3) 
 mu = 1.81 * 10**-5  # Dynamic viscosity Pa.s
 nu = mu / rho0  # Kinematic viscosity m2/s
-
 
 # %%
 """ Functions to compute resistance and reactance """
@@ -61,11 +61,10 @@ def calculate_absorption_coefficient(resistance, reactance, theta=0):
     
     return 1 - np.abs(R_surface)**2
 
-
 # %%
 """ Function of the resistance using the acoustic pressure rather than acoustic velocity """
 
-def resistance_eq(r, omega, p_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma, M):
+def resistance_eq(r, omega, p_acous_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma, M):
     """ 
     The resistance can be given by a linear part, called A(w) and a non linear part which depends on the acoustic velocity |v|, multiplied by a coefficient B.
     r(w,|v|) = A(w) + B |v|/sigma + (1 -sigma²)/sigma kM
@@ -75,17 +74,16 @@ def resistance_eq(r, omega, p_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma,
     B = (1 - sigma**2) / (sigma * c0)
     impedance_magnitude = abs(r + (1j * (chi_tot_plate + chi_cavity)))
     r_airflow = compute_resistance_tangencial_airflow(sigma, M)
-    return r - (r_tot_plate + B * p_pa / (rho0 * c0 * sigma * impedance_magnitude) + r_airflow)
-
+    return r - (r_tot_plate + B * p_acous_pa / (rho0 * c0 * sigma * impedance_magnitude) + r_airflow)
 
 # %%
 """ General Function to Vary Parameters """
 
-def compute_impedance_varying_param(frequencies, L, d, sigma, p_pa, e, M):
+def compute_impedance_varying_param(frequencies, L, d, sigma, p_acous_pa, e, M):
     """ 
     This function verifies which parameter is a list and solve the system for differnet values.
     """
-    parameters = {'L': L, 'd': d, 'sigma': sigma, 'p_pa': p_pa, 'e': e, 'M':M}
+    parameters = {'L': L, 'd': d, 'sigma': sigma, 'p_acous_pa': p_acous_pa, 'e': e, 'M':M}
 
     for k, v in parameters.items():
         if isinstance(v, np.ndarray):
@@ -94,11 +92,11 @@ def compute_impedance_varying_param(frequencies, L, d, sigma, p_pa, e, M):
     varying_param_values = parameters[varying_param]
     print(f"Varying parameter: {varying_param}")
 
-    L_fixed, d_fixed, sigma_fixed, p_pa_fixed, e_fixed, M_fixed = L, d, sigma, p_pa, e, M
+    L_fixed, d_fixed, sigma_fixed, p_acous_pa_fixed, e_fixed, M_fixed = L, d, sigma, p_acous_pa, e, M
     omega, k = Initiate_wave(frequencies)
 
-    results_resistance = []
-    results_alpha = []
+    results_resistance = {}
+    results_alpha = {}
 
     for value in varying_param_values:
         # Check the name of the varying parameter and updates the value
@@ -108,8 +106,8 @@ def compute_impedance_varying_param(frequencies, L, d, sigma, p_pa, e, M):
             d_fixed = value
         elif varying_param == 'sigma':
             sigma_fixed = value
-        elif varying_param == 'p_pa':
-            p_pa_fixed = value
+        elif varying_param == 'p_acous_pa':
+            p_acous_pa_fixed = value
         elif varying_param == 'e':
             e_fixed = value
         elif varying_param == 'M':
@@ -128,56 +126,130 @@ def compute_impedance_varying_param(frequencies, L, d, sigma, p_pa, e, M):
             r_tot_plate_i = r_tot_plate[i]
             
             r_initial = 0.5
-            r_solution = fsolve(resistance_eq, r_initial, args=(omega_i, p_pa_fixed, r_tot_plate_i, chi_tot_plate_i, chi_cavity_i, sigma_fixed, M_fixed))[0]
+            r_solution = fsolve(resistance_eq, r_initial, args=(omega_i, p_acous_pa_fixed, r_tot_plate_i, chi_tot_plate_i, chi_cavity_i, sigma_fixed, M_fixed))[0]
             
             alpha.append(calculate_absorption_coefficient(r_solution, chi_tot_plate_i + chi_cavity_i))
             r_nonlinear.append(r_solution)
 
         # Save the results
-        results_resistance.append((value, r_nonlinear))
-        results_alpha.append((value, alpha))
+        results_resistance[value] = r_nonlinear
+        results_alpha[value] = alpha
 
-    # Plot the results
-    plt.figure(figsize=(10, 6))
-    for value, r_values in results_resistance:
-        plt.plot(frequencies, r_values, label=f"{varying_param} = {20 * np.log10(value / 20e-6):.0f} dB")
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Acoustic Resistance (r)")
-    plt.title(f"Nonlinear Resistance vs Frequency for Varying {varying_param}")
-    plt.legend()
-    plt.grid(True)
-
-    plt.figure(figsize=(10, 6))
-    for value, r_values in results_alpha:
-        plt.plot(frequencies, chi_cavity + chi_tot_plate, label=f"{varying_param} = {20 * np.log10(value / 20e-6):.0f} dB")
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Acoustic Reactance (χ)")
-    plt.ylim([-20, 50])
-    plt.legend()
-    plt.grid(True)
-
-    plt.figure(figsize=(10, 6))
-    for value, r_values in results_alpha:
-        plt.plot(frequencies, r_values, label=f"{varying_param} = {20 * np.log10(value / 20e-6):.0f} dB")
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Absorption coefficient")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
+    return results_resistance, results_alpha
 
 # %%
 """ Example Usage """
 
 # Liner's geometry and properties
-L = 10e-3
-d = 0.68e-3
-sigma = 0.0139
-e = 1.02e-3
-M = 0.0
+L = 15e-3
+d = 1.5e-3
+sigma = 0.15
+e = 1.5e-3
+
+p_acous_pa = 1000
+
 
 # Define frequencies
 frequencies = np.linspace(0.1, 5000, 100)
 
-p_pa_values = np.linspace(2, 1000, 5)  # Vary p_pa between 100Pa and 1000Pa
-compute_impedance_varying_param(frequencies, L, d, sigma, p_pa_values, e, M)
+M_values = np.linspace(0, 0.5, 5)
+L_values = np.linspace(10e-3, 20e-3, 5)
+
+cmap = cm.get_cmap('viridis', M_values.size)
+
+plt.figure(figsize=(10, 6))
+for i in range(M_values.size):
+    results_resistance, results_alpha = compute_impedance_varying_param(frequencies, L_values, d, sigma, p_acous_pa, e, M_values[i])
+
+    color = cmap(i)
+
+    value = list(results_alpha.keys())
+    r_values = list(results_alpha.values())
+    freq_max = []
+    for j in range(len(value)):
+        freq_max.append(frequencies[np.argmax(r_values[j])])
+    plt.plot(value, freq_max, color=color, label=f"{M_values[i]}")
+    plt.xlabel("cavity size")
+    plt.ylabel("Frequency (Hz)")
+    plt.legend()
+    plt.grid(True)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+plt.figure(figsize=(10, 6))
+for value, r_values in results_resistance:
+    plt.plot(frequencies, r_values, label=f"{varying_param} = {20 * np.log10(value / 20e-6):.0f} dB")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Acoustic Resistance (r)")
+plt.title(f"Nonlinear Resistance vs Frequency for Varying {varying_param}")
+plt.legend()
+plt.grid(True)
+
+plt.figure(figsize=(10, 6))
+for value, r_values in results_alpha:
+    plt.plot(frequencies, chi_cavity + chi_tot_plate, label=f"{varying_param} = {20 * np.log10(value / 20e-6):.0f} dB")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Acoustic Reactance (χ)")
+plt.ylim([-20, 50])
+plt.legend()
+plt.grid(True)
+
+plt.figure(figsize=(10, 6))
+for value, r_values in results_alpha:
+    plt.plot(frequencies, r_values, label=f"{varying_param} = {20 * np.log10(value / 20e-6):.0f} dB")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Absorption coefficient")
+plt.legend()
+plt.grid(True)
+plt.show()
+"""
