@@ -148,8 +148,6 @@ e = 1.5e-3
 
 p_acous_pa = 1000
 
-
-# Define frequencies
 frequencies = np.linspace(0.1, 5000, 100)
 
 M_values = np.linspace(0, 0.5, 5)
@@ -168,7 +166,7 @@ for i in range(M_values.size):
     freq_max = []
     for j in range(len(value)):
         freq_max.append(frequencies[np.argmax(r_values[j])])
-    plt.plot(value, freq_max, color=color, label=f"{M_values[i]}")
+    plt.plot(value, freq_max, color=color, label=f"? = {M_values[i]}")
     plt.xlabel("cavity size")
     plt.ylabel("Frequency (Hz)")
     plt.legend()
