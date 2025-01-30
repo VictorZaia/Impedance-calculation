@@ -6,23 +6,17 @@ from Solver.Processor import *
 from Solver.Post_Processor import Post_Processor as post
 from Properties.Flying_condition import *
 
+"""Frequencies"""
+
 frequencies = np.linspace(0.1, 8000, 100)
-
-"""Initialize the liner geometry"""
-
-L = 15e-3
-d = 1.5e-3
-sigma = 0.15
-e = 1.5e-3
-
 
 """Noise level"""
 
 p_acous_pa = 1000
 
-altitudes = 5000#np.linspace(0, 12000, 4)
+"""Altitude"""
 
-liner = Liner(L, d, sigma, e)
+altitudes = 5000#np.linspace(0, 12000, 4)
 
 """Initialize the liner geometry"""
 

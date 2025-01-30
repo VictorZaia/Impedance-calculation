@@ -11,7 +11,7 @@ class Wave:
         return 2 * np.pi * self._frequencies
     
     @property
-    def K(self):
+    def k(self):
         return self.omega / self._c
     
     def __repr__(self):

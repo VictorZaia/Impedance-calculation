@@ -93,7 +93,7 @@ class Processor:
         e = processor._liner._e
 
         omega = processor._wave.omega
-        K = processor._wave.K
+        K = processor._wave.k
 
         r_tot_plate = processor.compute_resistance_plate(omega, K, sigma, d, e)
         chi_tot_plate = processor.compute_reactance_plate(omega, sigma, d, e, M)
@@ -160,3 +160,45 @@ class Processor:
                 impedances[param].append({value: copy.deepcopy(var)})
 
         return impedances
+    
+    @staticmethod
+    def gradient_descent(f, L_init, learning_rate = 0.01, num_iterations = 1000):
+
+        x = L_init
+        
+        # calculate the gradient of f at (x, y)
+        grad_x = grad(f)
+        grad_y = grad(f,argnums=(1))
+        
+        for i in range(num_iterations):
+            # update x and y using gradient descent
+            x = x - learning_rate * grad_x(x,y)
+            y = y - learning_rate * grad_y(x,y)
+
+        # print the final value of the loss at (x, y)
+        print("iteration {}: f(x, y) = {}".format(i, f(x, y)))
+            
+        return x
+    
+    @staticmethod
+    def resistance_eq_opt(r, L, d, sigma, e, M, wave, c, nu, who, p_acous_pa):
+
+        r_visc = np.sqrt(8 * nu * wave.omega) / (c* sigma) * (1 + e / d)
+        r_rad = 1 / (8 * sigma) * (wave.k * d)**2
+        r_tot_plate = r_visc + r_rad
+
+        eps = 1 / (1 + 305 * M**3) # Correction factor when considering airflow, M is the mach number
+        chi_mass = wave.omega / (sigma * c) * (e + eps * (8 * d) / (3 * np.pi) * (1 - 0.71 * np.sqrt(sigma)))
+        chi_visc = wave.omega / (sigma * c) * (np.sqrt(8 * nu / wave._omega) * (1 + e / d))
+        chi_tot_plate = chi_mass + chi_visc
+
+        chi_cavity = - 1 / np.tan(k* L)
+
+        r_airflow = 0.3 * (1 - sigma**2) / sigma * M
+
+        B = (1 - sigma**2) / (sigma * c)
+        impedance_magnitude = abs(r + (1j * (chi_tot_plate + chi_cavity)))
+        r_airflow = r_airflow = 0.3 * (1 - sigma**2) / sigma * M
+
+        return r - (r_tot_plate + B * p_acous_pa / (rho * self._environment.speed_of_sound * sigma * impedance_magnitude) + r_airflow)
+    
