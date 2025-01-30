@@ -1,11 +1,6 @@
-import numpy as np
-from scipy.optimize import fsolve
-
-
 class Impedance:
-    """Class to calculate the impedance (resistance and reactance) for a given wave and environment."""
+    
     def __init__(self):
-
         self._resistance = None
         self._reactance = None
         self._absorption_coefficient = None
@@ -18,3 +13,12 @@ class Impedance:
     
     def set_absorption_coefficient(self, absorption_coefficient):
         self._absorption_coefficient = absorption_coefficient
+
+    def get_resistance(self):
+        return self._resistance
+
+    def get_reactance(self):
+        return self._reactance
+    
+    def get_absorption_coefficient(self):
+        return self._absorption_coefficient

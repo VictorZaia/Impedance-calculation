@@ -184,7 +184,7 @@ p_acous_pa = 1000
 frequencies = np.linspace(0.1, 5000, 100)
 
 M_values = np.linspace(0, 0.5, 5)
-L_values = np.linspace(10e-3, 20e-3, 2)
+L_values = np.linspace(10e-3, 20e-3, 10)
 
 cmap = cm.get_cmap('viridis', M_values.size)
 
