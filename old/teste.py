@@ -13,6 +13,34 @@ mu = 1.81 * 10**-5  # Dynamic viscosity Pa.s
 nu = mu / rho0  # Kinematic viscosity m2/s
 
 # %%
+"""Functions to compute the properties of the air"""
+def calculate_density(pressure, temperature):
+
+    R = 287.05
+
+    rho = pressure / (R * temperature)
+
+    return rho
+
+def calculate_speed_of_sound(temperature):
+
+    gamma = 1.4
+
+    c = np.sqrt(gamma * R * temperature)
+
+    return c
+
+def calculate_dynamic_viscosity(temperature):
+
+    T0 = 273.15
+    mu_0 = 1.716e-5
+    C = 110.4
+
+    mu = mu_0 * (T0 + C) / (temperature + C) * (temperature / T0)**1.5
+
+    return mu
+
+# %%
 """ Functions to compute resistance and reactance """
 
 def Initiate_wave(frequencies):
@@ -21,6 +49,7 @@ def Initiate_wave(frequencies):
     """
     omega = 2 * np.pi * frequencies  # Angular frequency
     k = omega / c0  # Wave number
+
     return omega, k
 
 def compute_impedance_plate(omega, k, sigma, d, e, M):
@@ -43,6 +72,7 @@ def compute_reactance_cavity(L, k):
     Computes the cavity impedance.
     """
     chi_cavity = - 1 / np.tan(k * L)
+
     return chi_cavity
 
 def compute_resistance_tangencial_airflow(sigma, M):
@@ -51,6 +81,7 @@ def compute_resistance_tangencial_airflow(sigma, M):
     M: mach number 
     """
     r_airflow = 0.3 * (1 - sigma**2) / sigma * M
+
     return r_airflow
 
 def calculate_absorption_coefficient(resistance, reactance, theta=0):
@@ -74,6 +105,7 @@ def resistance_eq(r, omega, p_acous_pa, r_tot_plate, chi_tot_plate, chi_cavity, 
     B = (1 - sigma**2) / (sigma * c0)
     impedance_magnitude = abs(r + (1j * (chi_tot_plate + chi_cavity)))
     r_airflow = compute_resistance_tangencial_airflow(sigma, M)
+
     return r - (r_tot_plate + B * p_acous_pa / (rho0 * c0 * sigma * impedance_magnitude) + r_airflow)
 
 # %%
@@ -137,6 +169,7 @@ def compute_impedance_varying_param(frequencies, L, d, sigma, p_acous_pa, e, M):
 
     return results_resistance, results_alpha
 
+
 # %%
 """ Example Usage """
 
@@ -148,12 +181,10 @@ e = 1.5e-3
 
 p_acous_pa = 1000
 
-
-# Define frequencies
 frequencies = np.linspace(0.1, 5000, 100)
 
 M_values = np.linspace(0, 0.5, 5)
-L_values = np.linspace(10e-3, 20e-3, 5)
+L_values = np.linspace(10e-3, 20e-3, 10)
 
 cmap = cm.get_cmap('viridis', M_values.size)
 
@@ -168,12 +199,14 @@ for i in range(M_values.size):
     freq_max = []
     for j in range(len(value)):
         freq_max.append(frequencies[np.argmax(r_values[j])])
-    plt.plot(value, freq_max, color=color, label=f"{M_values[i]}")
+    plt.plot(value, freq_max, color=color, label=f"M = {M_values[i]}")
     plt.xlabel("cavity size")
     plt.ylabel("Frequency (Hz)")
     plt.legend()
     plt.grid(True)
 plt.show()
+
+
 
 
 
