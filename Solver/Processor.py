@@ -181,24 +181,78 @@ class Processor:
         return x
     
     @staticmethod
-    def resistance_eq_opt(r, L, d, sigma, e, M, wave, c, nu, who, p_acous_pa):
-
-        r_visc = np.sqrt(8 * nu * wave.omega) / (c* sigma) * (1 + e / d)
+    def resistance_eq_jax(L, d, sigma, e, p_acous_pa, M, processor):#resistance_eq_opt(r, L, d, sigma, e, M, wave, environment, p_acous_pa):
+        """
+        r_visc = np.sqrt(8 * environment.nu * wave.omega) / (environment.speed_of_sound* sigma) * (1 + e / d)
         r_rad = 1 / (8 * sigma) * (wave.k * d)**2
         r_tot_plate = r_visc + r_rad
 
         eps = 1 / (1 + 305 * M**3) # Correction factor when considering airflow, M is the mach number
-        chi_mass = wave.omega / (sigma * c) * (e + eps * (8 * d) / (3 * np.pi) * (1 - 0.71 * np.sqrt(sigma)))
-        chi_visc = wave.omega / (sigma * c) * (np.sqrt(8 * nu / wave._omega) * (1 + e / d))
+        chi_mass = wave.omega / (sigma * environment.speed_of_sound) * (e + eps * (8 * d) / (3 * np.pi) * (1 - 0.71 * np.sqrt(sigma)))
+        chi_visc = wave.omega / (sigma * environment.speed_of_sound) * (np.sqrt(8 * environment.nu / wave._omega) * (1 + e / d))
         chi_tot_plate = chi_mass + chi_visc
 
-        chi_cavity = - 1 / np.tan(k* L)
+        chi_cavity = - 1 / np.tan(wave.k * L)
 
         r_airflow = 0.3 * (1 - sigma**2) / sigma * M
 
-        B = (1 - sigma**2) / (sigma * c)
+        B = (1 - sigma**2) / (sigma * environment.speed_of_sound)
         impedance_magnitude = abs(r + (1j * (chi_tot_plate + chi_cavity)))
         r_airflow = r_airflow = 0.3 * (1 - sigma**2) / sigma * M
+        
 
-        return r - (r_tot_plate + B * p_acous_pa / (rho * self._environment.speed_of_sound * sigma * impedance_magnitude) + r_airflow)
+        def resistance_eq(self, r, p_acous_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma, M):
+        
+            B = (1 - sigma**2) / (sigma * self._environment.speed_of_sound)
+            impedance_magnitude = abs(r + (1j * (chi_tot_plate + chi_cavity)))
+            r_airflow = Processor.compute_resistance_tangencial_airflow(sigma, M)
+
+            return r - (r_tot_plate + B * p_acous_pa / (self._environment.rho * self._environment.speed_of_sound * sigma * impedance_magnitude) + r_airflow)
+        
+        """
+
+        # Get the resistance and reactance at the fixed frequency
+        r_tot_plate = processor.compute_resistance_plate(processor._environment.omega, processor._environment.K, sigma, d, e)
+        chi_tot_plate = processor.compute_reactance_plate(processor._environment.omega, sigma, d, e, M)
+        chi_cavity = Processor.compute_reactance_cavity(L, processor._environment.K)
+
+        # Calculate the nonlinear resistance (r_solution) for the fixed frequency
+        r_initial = 0.5
+        r_solution = fsolve(processor.resistance_eq, r_initial, args=(p_acous_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma, M))[0]
+
+        # Return the resistance for JAX gradient calculation
+        return r_solution
     
+    # Now use jax.grad to get the derivative of the resistance w.r.t. L.
+    def find_L_with_gradient(environment, wave, liner, p_acous_pa, M, fixed_frequency):
+        """
+        Find the cavity height (L) that minimizes the resistance using gradient descent.
+        """
+        # Create a Processor instance
+        processor = Processor(environment, wave, liner)
+        
+        # Fixed frequency, corresponding omega and wave number
+        omega_fixed = wave.omega[wave.frequencies == fixed_frequency]
+        K_fixed = wave.K[wave.frequencies == fixed_frequency]
+
+        # Define the function to compute the resistance
+        def resistance_for_L(L):
+            # Using jax grad to compute the derivative of resistance w.r.t. L
+            grad_resistance = jax.grad(resistance_eq_jax)(L, p_acous_pa, processor.compute_resistance_plate(omega_fixed, K_fixed, processor._liner._sigma, processor._liner._d, processor._liner._e),
+                                                        processor.compute_reactance_plate(omega_fixed, processor._liner._sigma, processor._liner._d, processor._liner._e, M),
+                                                        Processor.compute_reactance_cavity(L, K_fixed),
+                                                        processor._liner._sigma, M, omega_fixed, K_fixed, processor)
+            return grad_resistance
+
+        # Initialize with an initial guess for L
+        L_initial = 0.1
+        
+        # Use gradient descent to find the optimal L where the resistance is minimized
+        result = minimize(resistance_for_L, L_initial, bounds=[(0.01, 0.5)], method='L-BFGS-B')  # Using L-BFGS-B for gradient descent
+
+        optimal_L = result.x[0]  # Optimal L that minimizes the resistance
+        minimized_resistance = result.fun  # The minimized resistance (should be near zero)
+        
+        return optimal_L, minimized_resistance
+    
+

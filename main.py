@@ -26,10 +26,7 @@ sigma = 0.15
 e = 1.5e-3
 
 impedances = Processor.compute_impedance_varying_param("L", L, d, sigma, e, altitudes, frequencies, p_acous_pa)
-print(impedances)
 post.plot_absorption_coefficients(frequencies, impedances)
-
-
 
 L = 15e-3
 d  = np.linspace(1e-3, 2.e-3, 5)
@@ -37,10 +34,7 @@ sigma = 0.15
 e = 1.5e-3
 
 impedances = Processor.compute_impedance_varying_param("d", L, d, sigma, e, altitudes, frequencies, p_acous_pa)
-print(impedances)
 post.plot_absorption_coefficients(frequencies, impedances)
-
-
 
 L = 15e-3
 d  = 1.5e-3
@@ -48,10 +42,7 @@ sigma = np.linspace(0.1, 0.2, 5)
 e = 1.5e-3
 
 impedances = Processor.compute_impedance_varying_param("sigma", L, d, sigma, e, altitudes, frequencies, p_acous_pa)
-print(impedances)
 post.plot_absorption_coefficients(frequencies, impedances)
-
-
 
 L = 15e-3
 d  = 1.5e-3
@@ -59,8 +50,11 @@ sigma = 0.15
 e = np.linspace(1e-3, 2.e-3, 5)
 
 impedances = Processor.compute_impedance_varying_param("e", L, d, sigma, e, altitudes, frequencies, p_acous_pa)
-print(impedances)
 post.plot_absorption_coefficients(frequencies, impedances)
+
+
+
+
 
 
 
