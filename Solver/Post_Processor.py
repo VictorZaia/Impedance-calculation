@@ -1,4 +1,4 @@
-from Solver.Impedance import *
+from Properties.Impedance import *
 
 import matplotlib.pyplot as plt
 
