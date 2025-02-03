@@ -1,12 +1,13 @@
-from Properties.Environment import *
-from Properties.Wave import *
-from Properties.Flying_condition import *
-from Properties.Impedance import *
-from Liner.Liner import *
+from Tools.Impedance_functions import *
 
-import numpy as np
+from Properties.Wave import Wave
+from Properties.Flying_condition import Flying_condition
+from Properties.Impedance import Impedance
+from Liner.Liner import Liner
+
 from scipy.optimize import fsolve
 import copy
+
 class Processor:
 
     __impedance = Impedance()
@@ -16,69 +17,6 @@ class Processor:
         self._wave = wave
         self._liner = liner
     
-    def compute_resistance_plate(self, omega, k, sigma, d, e):
-        """
-        Computes the acoustic resistance for the plate.
-        """
-        r_visc = np.sqrt(8 * self._environment.nu * omega) / (self._environment.speed_of_sound * sigma) * (1 + e / d)
-        r_rad = 1 / (8 * sigma) * (k * d)**2
-        r_tot_plate = r_visc + r_rad
-        
-        return r_tot_plate
-    
-    def compute_reactance_plate(self, omega, sigma, d, e, M):
-        """
-        Computes the acoustic reactance for the plate.
-        """
-        eps = 1 / (1 + 305 * M**3) # Correction factor when considering airflow, M is the mach number
-        chi_mass = omega / (sigma * self._environment.speed_of_sound) * (e + eps * (8 * d) / (3 * np.pi) * (1 - 0.71 * np.sqrt(sigma)))
-        chi_visc = omega / (sigma * self._environment.speed_of_sound) * (np.sqrt(8 * self._environment.nu / omega) * (1 + e / d))
-        chi_tot_plate = chi_mass + chi_visc
-        
-        return chi_tot_plate
-    
-    @staticmethod
-    def compute_reactance_cavity(L, k):
-        """
-        Computes the cavity impedance.
-        """
-        chi_cavity = - 1 / np.tan(k * L)
-
-        return np.copy(chi_cavity)
-
-    @staticmethod
-    def compute_resistance_tangencial_airflow(sigma, M):
-        """
-        Computes the resistance term for a tangencial airflow
-        M: mach number 
-        """
-        r_airflow = 0.3 * (1 - sigma**2) / sigma * M
-
-        return np.copy(r_airflow)
-    
-    def resistance_eq(self, r, p_acous_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma, M):
-        """ 
-        The resistance can be given by a linear part, called A(w) and a non linear part which depends on the acoustic velocity |v|, multiplied by a coefficient B.
-        r(w,|v|) = A(w) + B |v|/sigma + (1 -sigma²)/sigma kM
-        |v| can be linked to |p| yielding the equation
-        see Malmary if necessary
-        """
-        B = (1 - sigma**2) / (sigma * self._environment.speed_of_sound)
-        impedance_magnitude = abs(r + (1j * (chi_tot_plate + chi_cavity)))
-        r_airflow = Processor.compute_resistance_tangencial_airflow(sigma, M)
-
-        return r - (r_tot_plate + B * p_acous_pa / (self._environment.rho * self._environment.speed_of_sound * sigma * impedance_magnitude) + r_airflow)
-    
-    @staticmethod
-    def calculate_absorption_coefficient(resistance, reactance, theta=0):
-        """
-        Calculate the absorption coefficient.
-        """
-        Z_surface = resistance + 1j * reactance
-        R_surface = (Z_surface * np.cos(theta) - 1) / (Z_surface * np.cos(theta) + 1)
-
-        return 1 - np.abs(R_surface)**2
-
     @staticmethod
     def compute_impedance(environment, wave, liner, p_acous_pa, M):
         """
@@ -94,10 +32,14 @@ class Processor:
         omega = processor._wave.omega
         K = processor._wave.k
 
-        r_tot_plate = processor.compute_resistance_plate(omega, K, sigma, d, e)
-        chi_tot_plate = processor.compute_reactance_plate(omega, sigma, d, e, M)
+        rho = processor._environment.rho
+        nu = processor._environment.nu
+        speed_of_sound = processor._environment.speed_of_sound
 
-        chi_cavity = Processor.compute_reactance_cavity(L, K)
+        r_tot_plate = compute_resistance_plate(omega, K, sigma, d, e, nu, speed_of_sound)
+        chi_tot_plate = compute_reactance_plate(omega, sigma, d, e, nu, speed_of_sound, M)
+
+        chi_cavity = compute_reactance_cavity(L, K)
 
         r_nonlinear = []
         alpha = []
@@ -108,9 +50,9 @@ class Processor:
             r_tot_plate_i = r_tot_plate[i]
 
             r_initial = 0.5
-            r_solution = fsolve(processor.resistance_eq, r_initial, args=(p_acous_pa, r_tot_plate_i, chi_tot_plate_i, chi_cavity_i, sigma, M))[0]
+            r_solution = fsolve(resistance_eq, r_initial, args=(p_acous_pa, r_tot_plate_i, chi_tot_plate_i, chi_cavity_i, sigma, rho, speed_of_sound, M))[0]
 
-            alpha.append(Processor.calculate_absorption_coefficient(r_solution, chi_tot_plate_i + chi_cavity_i))
+            alpha.append(calculate_absorption_coefficient(r_solution, chi_tot_plate_i + chi_cavity_i))
             r_nonlinear.append(r_solution)
 
         processor.__impedance.set_resistance(r_nonlinear)
