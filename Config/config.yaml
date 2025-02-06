@@ -1,0 +1,26 @@
+#General variables
+liner:
+  L: 0.015  
+  d: 0.0015
+  sigma: 0.15
+  e: 0.0015
+p_acous_pa: 1000
+
+# Configuration for impedance computation
+impedance:
+  frequencies:
+    start: 0.1
+    end: 8000
+    num_points: 100
+  altitude: 0
+
+# Configuration for geometry optimization
+optimization:
+  frequencie: 833 # Pratt & Whitney GTF™ engine
+  altitudes:
+    start: 0
+    end: 12000
+    num_points: 100
+  varying_params:
+    L_range: [0.010, 0.050, 50]  
+    sigma_range: [0.05, 0.5, 50] 

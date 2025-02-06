@@ -41,7 +41,7 @@ def compute_resistance_tangencial_airflow(sigma, M):
 def resistance_eq(r, p_acous_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma, rho, speed_of_sound, M):
     """ 
     The resistance can be given by a linear part, called A(w) and a non linear part which depends on the acoustic velocity |v|, multiplied by a coefficient B.
-    r(w,|v|) = A(w) + B |v|/sigma + (1 -sigma²)/sigma kM
+    r(w,|v|) = A(w) + B |v|/sigma + (1 -sigma²)/sigma M
     |v| can be linked to |p| yielding the equation
     see Malmary if necessary
     """

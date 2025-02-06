@@ -27,7 +27,7 @@ class Optimizer():
         r_solution = fsolve(resistance_eq, r_initial, args=(p_acous_pa, r_tot_plate, chi_tot_plate, chi_cavity, sigma, rho, speed_of_sound, M))[0]
         
         alpha = calculate_absorption_coefficient(r_solution, chi_tot_plate + chi_cavity)
-        return -alpha
+        return alpha
 
     @staticmethod
     def loss_function_values(L, d, sigma, e, altitude, frequencie, p_acous_pa):
@@ -41,7 +41,7 @@ class Optimizer():
 
         for i, value_sigma in enumerate(sigma):
             for j, value_L in enumerate(L):
-                alpha[i, j] = - Optimizer.resistance_eq_opt(value_L, d, value_sigma, e, p_acous_pa, wave.omega, wave.k, flying_condition._environment.nu, flying_condition._environment.rho, flying_condition._environment.speed_of_sound, flying_condition._mach)
+                alpha[i, j] = Optimizer.resistance_eq_opt(value_L, d, value_sigma, e, p_acous_pa, wave.omega, wave.k, flying_condition._environment.nu, flying_condition._environment.rho, flying_condition._environment.speed_of_sound, flying_condition._mach)
         
         return alpha
 
@@ -65,7 +65,7 @@ class Optimizer():
 
             for i, value_sigma in enumerate(sigma_values):
                 for j, value_L in enumerate(L_values):
-                    alpha[i, j] = - Optimizer.resistance_eq_opt(value_L, d, value_sigma, e, p_acous_pa, wave.omega, wave.k, flying_condition._environment.nu, flying_condition._environment.rho, flying_condition._environment.speed_of_sound, flying_condition._mach)
+                    alpha[i, j] = Optimizer.resistance_eq_opt(value_L, d, value_sigma, e, p_acous_pa, wave.omega, wave.k, flying_condition._environment.nu, flying_condition._environment.rho, flying_condition._environment.speed_of_sound, flying_condition._mach)
             alpha_max.append(np.max(alpha))
             alpha_max_index = np.where(alpha == np.max(alpha))
             optimal_L.append(L_values[alpha_max_index[1][0]])
